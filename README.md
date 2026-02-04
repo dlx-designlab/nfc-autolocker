@@ -1,6 +1,8 @@
-# Suica Card Access Control System
+# NFC Card Access Control System
 
 A Python-based access control system that monitors the presence of authorized Suica/NFC cards using the Sony RC-S380 NFC reader. It automatically locks the Windows session if an authorized card is not present or removed.
+
+![Lock Screen Background](app-bg.jpg)
 
 ## Features
 
