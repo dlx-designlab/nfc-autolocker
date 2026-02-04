@@ -1,0 +1,8 @@
+{
+    "users": [
+        {
+            "name": "Example User",
+            "card_number": "0123456789ABCDEF"
+        }
+    ]
+}
