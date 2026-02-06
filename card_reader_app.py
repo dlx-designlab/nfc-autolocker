@@ -12,6 +12,7 @@ import pytz
 import time
 import sys
 import ctypes
+from ctypes import wintypes
 import tkinter as tk
 try:
     from PIL import Image, ImageTk
@@ -19,9 +20,16 @@ try:
 except ImportError:
     HAS_PIL = False
 
+# Determine base path (handle PyInstaller EXE vs Script)
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # File paths
-USERS_FILE = "authorized_users.json"
-LOG_FILE = "access_log.txt"
+USERS_FILE = os.path.join(BASE_DIR, "authorized_users.json")
+LOG_FILE = os.path.join(BASE_DIR, "access_log.txt")
+BG_FILE = os.path.join(BASE_DIR, "app-bg.jpg")
 
 # Japan timezone
 JAPAN_TZ = pytz.timezone('Asia/Tokyo')
@@ -128,6 +136,58 @@ def process_card(card_number, authorized_users):
     print("=" * 50)
 
 
+# Windows Desktop API Constants
+DESKTOP_READOBJECTS = 0x0001
+UOI_NAME = 2
+
+def is_workstation_locked():
+    """
+    Check if the workstation is locked by querying the input desktop name.
+    If the input desktop is 'Default', the workstation is unlocked.
+    Otherwise (e.g., 'Winlogon'), it is locked or on the secure desktop.
+    """
+    user32 = ctypes.windll.user32
+    
+    # Open the input desktop with read access
+    hDesktop = user32.OpenInputDesktop(0, False, DESKTOP_READOBJECTS)
+    
+    if not hDesktop:
+        # If we can't open the input desktop, we might assume locked or error.
+        # However, specifically for "Access Denied" (5) or similar, it often implies 
+        # we are running as a service or in a context that can't see the desktop.
+        # For a user app, failure here usually implies some transition state or lock.
+        # But let's fallback to the old method if this fails, or assume locked safely.
+        # Let's check GetLastError
+        # err = ctypes.GetLastError()
+        # For this specific app, let's treat failure as "likely locked" or check foreground window as backup.
+        
+        # Fallback to GetForegroundWindow == 0 as a secondary check
+        return user32.GetForegroundWindow() == 0
+
+    try:
+        name_buffer = ctypes.create_unicode_buffer(256)
+        needed = wintypes.DWORD()
+        
+        # Get the name of the desktop
+        result = user32.GetUserObjectInformationW(
+            hDesktop,
+            UOI_NAME,
+            name_buffer,
+            ctypes.sizeof(name_buffer),
+            ctypes.byref(needed)
+        )
+        
+        if not result:
+            return True # Failed to get info, play it safe
+            
+        desktop_name = name_buffer.value
+        # If desktop is not 'Default', we are likely locked (e.g. 'Winlogon')
+        return desktop_name.lower() != 'default'
+        
+    finally:
+        user32.CloseDesktop(hDesktop)
+
+
 class AccessControlApp:
     def __init__(self, reader):
         self.reader = reader
@@ -153,10 +213,10 @@ class AccessControlApp:
 
         # Load Background Image
         self.bg_photo = None
-        if HAS_PIL and os.path.exists("app-bg.jpg"):
+        if HAS_PIL and os.path.exists(BG_FILE):
             try:
-                bg_img = Image.open("app-bg.jpg")
-                # Resize keeping aspect ratio? Or fill? 
+                bg_img = Image.open(BG_FILE)
+                # Resize keeping aspect ratio? Or fill?  
                 # Let's fill the window
                 bg_img = bg_img.resize((w, h), Image.Resampling.LANCZOS)
                 self.bg_photo = ImageTk.PhotoImage(bg_img)
@@ -238,7 +298,7 @@ class AccessControlApp:
 
             # 5. UI & Timeout Logic
             # Check if workstation is locked
-            is_locked = (ctypes.windll.user32.GetForegroundWindow() == 0)
+            is_locked = is_workstation_locked()
 
             if status == "AUTHORIZED":
                 # Valid Card - Hide UI, Stop Timeout

@@ -61,7 +61,7 @@ This updates `authorized_users.json`.
 
 Start the card monitor:
 ```bash
-python suica_reader.py
+python card_reader_app.py
 ```
 
 **How it works:**
@@ -77,6 +77,52 @@ python suica_reader.py
     - **Windows Session is Locked** (`LockWorkStation`).
 - When the computer is locked:
     - The monitor pauses/resets (waits for user to unlock via Windows).
+
+## Compilation & Deployment
+
+To run as a standalone application without Python installed, you can compile the scripts into EXEs.
+
+### 1. Build Executables
+
+Install PyInstaller:
+```bash
+pip install pyinstaller
+```
+
+**Main Locker Service (Hidden/Background):**
+Runs silently without a console window.
+```bash
+pyinstaller --onefile --windowed card_reader_app.py
+```
+
+**User Manager (Console):**
+Requires a terminal for user input.
+```bash
+pyinstaller --onefile --console add_user.py
+```
+
+### 2. Organize Files
+
+The compiled EXEs will appear in the `dist` folder. You must manually copy the required asset files into the `dist` folder so the application can find them.
+
+**Copy these files to `dist`:**
+- `app-bg.jpg`
+- `authorized_users.json`
+- `access_log.txt`
+
+### 3. Install & Autostart
+
+1. **Move to AppData:**
+   Create a persistent folder and move all files from `dist` (EXEs + assets) there:
+   `C:\Users\<username>\AppData\Local\DLX_NFC_Locker_app`
+
+2. **Set up Task Scheduler:**
+   - Open **Task Scheduler** in Windows.
+   - Create a **Basic Task**.
+   - Trigger: **When I log on**.
+   - Action: **Start a program**.
+   - Program: Browse to `card_reader_app.exe` in the `DLX_NFC_Locker_app` folder.
+   - Finish.
 
 ## Files
 
