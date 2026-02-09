@@ -198,7 +198,7 @@ class AccessControlApp:
         self.root.overrideredirect(True)
         
         # Default size
-        w, h = 700, 900
+        w, h = 700, 700
 
         # Center the window
         ws = self.root.winfo_screenwidth()
@@ -225,12 +225,11 @@ class AccessControlApp:
                 print(f"Could not load background: {e}")
 
         # Draw Text
-        current_y = 700 # Center vertically
         
         # Assuming black text ensures visibility if previously white background
         text_color = "black" if not self.bg_photo else "white" 
         
-        self.text_id = self.canvas.create_text(w/2, current_y, text="Waiting for card...", 
+        self.text_id = self.canvas.create_text(w/2, h - 150, text="Waiting for card...", 
                                              font=("Arial", 20), fill=text_color, justify="center")
         
         self.timer_id = self.canvas.create_text(w/2, h - 50, text="", 
@@ -240,7 +239,7 @@ class AccessControlApp:
         self.last_user_name = None
         
         self.no_card_start_time = time.time()
-        self.TIMEOUT_SECONDS = 20
+        self.TIMEOUT_SECONDS = 10
         self.last_display_text = ""
         
         # Start the check loop

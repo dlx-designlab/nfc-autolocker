@@ -9,9 +9,12 @@ import os
 import time
 import msvcrt
 import sys
+from datetime import datetime
+import pytz
 
 # File paths
 USERS_FILE = "authorized_users.json"
+JAPAN_TZ = pytz.timezone('Asia/Tokyo')
 
 # Get UID/IDm command (works for most contactless cards)
 GET_UID_CMD = [0xFF, 0xCA, 0x00, 0x00, 0x00]
@@ -82,7 +85,8 @@ def save_user_to_file(name, card_number):
         
     data["users"].append({
         "name": name,
-        "card_number": card_number
+        "card_number": card_number,
+        "updated_at": datetime.now(JAPAN_TZ).strftime("%Y-%m-%d %H:%M:%S JST")
     })
     
     try:
